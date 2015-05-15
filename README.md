@@ -7,7 +7,6 @@ npm install node-dogecoindark from the official npm!) for integration with DOGED
 # Installation
 To install node-tip-bot simply clone this repo and install dependencies:
 ```bash
-npm install node-dogecoindark
 git clone https://github.com/doged/dogedtip-twitter
 cd dogedtip-twitter
 npm install
