@@ -22,7 +22,7 @@ log:
 rpc:
   host: localhost
   port: 20102
-  user: dogecoinrpc
+  user: dogecoindarkrpc
   pass: pass
   prefix: ''
 coin:
