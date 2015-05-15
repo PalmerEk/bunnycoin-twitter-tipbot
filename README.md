@@ -3,7 +3,7 @@ dogedtip-twitter is an open-source node.js twitter bot for tipping with Dogecoin
 It is forked off uneks IRC node-tip-bot (https://github.com/unek/node-tip-bot)
 It uses [node-dogecoindark](https://github.com/doged/node-dogecoindark) for integration with DOGED's JSON RPC API.
 
-# Instalation
+# Installation
 To install node-tip-bot simply clone this repo and install dependencies:
 ```bash
 git clone https://github.com/doged/dogedtip-twitter
