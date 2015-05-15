@@ -3,8 +3,8 @@ twitter:
     consumer_secret: ''
     access_token_key: ''
     access_token_secret: ''
-    twittername: ''
-    twitterkeyword: 'skeinbot'
+    twittername: 'dogedtip'
+    twitterkeyword: 'dogedtip'
 connection: 
   host: irc.freenode.net
   port: 6697
@@ -16,7 +16,7 @@ login:
   realname: node.js dogecoindark tipping bot
   nickserv_password: pass
 channels: 
-  - '##tipbots'
+  - '#dogedtip'
 log:
   file: tipbot.log
 rpc:
