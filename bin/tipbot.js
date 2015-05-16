@@ -103,10 +103,10 @@ if(!fs.existsSync('./config/config.yml')) {
 			console.log(data);
  		});   
     })
-    client.stream('statuses/filter', {track: 'darktipperbot'}, function (stream) {
+    client.stream('statuses/filter', {track: 'dogedtip'}, function (stream) {
         stream.on('data', function (tweet) {
-            //var match = tweet.text.match(/(darktipperbot)(\s)([a-zA-Z]+)(\s)(.+)(\s)([0-9]+)/);
-            var match = tweet.text.match(/(darktipperbot)(\s)([a-zA-Z]+)/i);
+            //var match = tweet.text.match(/(dogedtip)(\s)([a-zA-Z]+)(\s)(.+)(\s)([0-9]+)/);
+            var match = tweet.text.match(/(dogedtip)(\s)([a-zA-Z]+)/i);
             if (match == null)
                 return;
             var command = match[3];
