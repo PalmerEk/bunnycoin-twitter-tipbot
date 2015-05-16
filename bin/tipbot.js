@@ -1,4 +1,4 @@
-	
+
     var winston = require('winston'),
             fs = require('fs'),
             yaml = require('js-yaml'),
@@ -65,13 +65,14 @@ if(!fs.existsSync('./config/config.yml')) {
         winston.info('Preparing tweet' + '@' + to + ' :' + themessage);
         var newtweet = '@' + to + ' ' + themessage + '(' + makeid() + ')';
         winston.info('' + '@' + to + ' :' + newtweet);
-        client.post('statuses/update', {status: newtweet, in_reply_to_status_id: replyid}, function (error, params, response) {
+        //client.post('statuses/update', {status: newtweet, in_reply_to_status_id: replyid}, function (error, params, response) {
+        client.post('direct_messages/new', {text: newtweet, user_id: replyid}, function (error, params, response) {
             if (error) {
                 console.log(error);
                 //throw error;
             }
      
-            console.log('Tweeting');
+            console.log('Sending..');
         });
     }
      
@@ -97,27 +98,31 @@ if(!fs.existsSync('./config/config.yml')) {
                                     str : global[variable]) : settings.coin[variable]) : values[variable];
         });
     }
-    client.stream('statuses/filter', {track: 'skeinbot'}, function (stream) {
-     
+    client.stream('user', function (stream) {
+		stream.on('data', function (data) {
+			console.log(data);
+ 		});   
+    })
+    client.stream('statuses/filter', {track: 'darktipperbot'}, function (stream) {
         stream.on('data', function (tweet) {
-            console.log('@'+ tweet.user.screen_name + '|' + tweet.text);
-            //var match = tweet.text.match(/(skeinbot)(\s)([a-zA-Z]+)(\s)(.+)(\s)([0-9]+)/);
-            var match = tweet.text.match(/(skeinbot)(\s)([a-zA-Z]+)/);
+            //var match = tweet.text.match(/(darktipperbot)(\s)([a-zA-Z]+)(\s)(.+)(\s)([0-9]+)/);
+            var match = tweet.text.match(/(darktipperbot)(\s)([a-zA-Z]+)/i);
             if (match == null)
                 return;
             var command = match[3];
-            var from = tweet.user.sreen_name; 
+            var sender = tweet.user.screen_name; 
             var msg = tweet.txt;
             var message = tweet.text;
             var replyid = tweet.id_str;
+            console.log('@'+ tweet.user.sreen_name + '|' + tweet.text);
     // check if the sending user is logged in (identified) with nickserv
             switch (command) {
                 case 'tip':
-                    var match = tweet.text.match(/(skeinbot)(\s)([a-zA-Z]+)(\s)(\@)(.+)(\s)([0-9]+)/);
+                    var match = tweet.text.match(/(darktipperbot)(\s)([a-zA-Z]+)(\s)(\@)(.+)(\s)([0-9]+)/i);
                     console.log('tip');
                     console.log(match[0] + ',' + match[1] + ',' + match[2] + ',' + match[3] + ',' + match[4] + ',' + match[5] + ',' + match[6] + ',' + match[7] + ',' + match[8]);
                     if (match == null || match.length < 3) {
-                        replytweet(from, replyid, 'Usage: nameofbot tip <twitterhandle> <amount>')
+                        replytweet(sender, replyid, 'Usage: @DarkTipperBot tip <twitterhandle> <amount>')
                         return;
                     }
                     //if (match[4] !== '@'){ return;}
@@ -126,84 +131,84 @@ if(!fs.existsSync('./config/config.yml')) {
      
                     console.log('To:' + amount);
                     // lock
-                    if (locks.hasOwnProperty(from.toLowerCase()) && locks[from.toLowerCase()])
+                    if (locks.hasOwnProperty(sender.toLowerCase()) && locks[sender.toLowerCase()])
                         return;
-                    locks[from.toLowerCase()] = true;
+                    locks[sender.toLowerCase()] = true;
      
                     if (isNaN(amount)) {
-                        locks[from.toLowerCase()] = null;
-                        replytweet(from, replyid, settings.messages.invalid_amount.expand({name: from, amount: match[8]}));
+                        locks[sender.toLowerCase()] = null;
+                        replytweet(sender, replyid, settings.messages.invalid_amount.expand({name: sender, amount: match[8]}));
                         return;
                     }
      
-                    if (to.toLowerCase() == from.toLowerCase()) {
-                        locks[from.toLowerCase()] = null;
-                        replytweet(from, replyid, settings.messages.tip_self.expand({name: from}));
+                    if (to.toLowerCase() == sender.toLowerCase()) {
+                        locks[sender.toLowerCase()] = null;
+                        replytweet(sender, replyid, settings.messages.tip_self.expand({name: sender}));
                         return;
                     }
                     if (amount < settings.coin.min_tip) {
-                        locks[from.toLowerCase()] = null;
-                        replytweet(from, replyid, settings.messages.tip_too_small.expand({from: from, to: to, amount: amount}));
+                        locks[sender.toLowerCase()] = null;
+                        replytweet(sender, replyid, settings.messages.tip_too_small.expand({sender: sender, to: to, amount: amount}));
                         return;
                     }
     // check balance with min. 5 confirmations
-                    coin.getBalance(settings.rpc.prefix + from.toLowerCase(), settings.coin.min_confirmations, function (err, balance) {
+                    coin.getBalance(settings.rpc.prefix + sender.toLowerCase(), settings.coin.min_confirmations, function (err, balance) {
                         if (err) {
-                            locks[from.toLowerCase()] = null;
+                            locks[sender.toLowerCase()] = null;
                             winston.error('Error in !tip command.', err);
      
-                            replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                            replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                             return;
                         }
                         var balance = typeof (balance) == 'object' ? balance.result : balance;
                         if (balance >= amount) {
-                            coin.send('move', settings.rpc.prefix + from.toLowerCase(), settings.rpc.prefix + to.toLowerCase(), amount, function (err, reply) {
-                                locks[from.toLowerCase()] = null;
+                            coin.send('move', settings.rpc.prefix + sender.toLowerCase(), settings.rpc.prefix + to.toLowerCase(), amount, function (err, reply) {
+                                locks[sender.toLowerCase()] = null;
                                 if (err || !reply) {
                                     winston.error('Error in !tip command', err);
-                                    replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                                    replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                                     return;
                                 }
-                                winston.info('%s tipped %s %d%s', from, to, amount, settings.coin.short_name)
-                                replytweet(from, replyid, settings.messages.tipped.expand({from: from, to: to, amount: amount}));
+                                winston.info('%s tipped %s %d%s', sender, to, amount, settings.coin.short_name)
+                                replytweet(sender, replyid, settings.messages.tipped.expand({sender: sender, to: to, amount: amount}));
                             });
                         } else {
-                            locks[from.toLowerCase()] = null;
-                            winston.info('%s tried to tip %s %d, but has only %d', from, to, amount, balance);
-                            replytweet(from, replyid, settings.messages.no_funds.expand({name: from, balance: balance, short: amount - balance, amount: amount}));
+                            locks[sender.toLowerCase()] = null;
+                            winston.info('%s tried to tip %s %d, but has only %d', sender, to, amount, balance);
+                            replytweet(sender, replyid, settings.messages.no_funds.expand({name: sender, balance: balance, short: amount - balance, amount: amount}));
                         }
                     });
                     break;
                 case 'address':
                     console.log('adress');
-                    var user = from.toLowerCase();
+                    var user = sender.toLowerCase();
                     getAddress(user, function (err, address) {
                         if (err) {
                             winston.error('Error in !address command', err);
-                            replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                            replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                             return;
                         }
-                        replytweet(from, replyid, settings.messages.deposit_address.expand({name: user, address: address}));
+                        replytweet(sender, replyid, settings.messages.deposit_address.expand({name: user, address: address}));
                     });
                     break;
                 case 'balance':
                     console.log('balance');
-                    var user = from.toLowerCase();
+                    var user = sender.toLowerCase();
                     coin.getBalance(settings.rpc.prefix + user, settings.coin.min_confirmations, function (err, balance) {
                         if (err) {
                             winston.error('Error in !balance command', err);
-                            replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                            replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                             return;
                         }
                         var balance = typeof (balance) == 'object' ? balance.result : balance;
                         coin.getBalance(settings.rpc.prefix + user, 0, function (err, unconfirmed_balance) {
                             if (err) {
                                 winston.error('Error in !balance command', err);
-                                replytweet(from, replyid, settings.messages.balance.expand({balance: balance, name: user}));
+                                replytweet(sender, replyid, settings.messages.balance.expand({balance: balance, name: user}));
                                 return;
                             }
                             var unconfirmed_balance = typeof (unconfirmed_balance) == 'object' ? unconfirmed_balance.result : unconfirmed_balance;
-                            replytweet(from, replyid, settings.messages.balance_unconfirmed.expand({balance: balance, name: user, unconfirmed: unconfirmed_balance - balance}));
+                            replytweet(sender, replyid, settings.messages.balance_unconfirmed.expand({balance: balance, name: user, unconfirmed: unconfirmed_balance - balance}));
                         })
                     });
                     break;
@@ -211,56 +216,56 @@ if(!fs.existsSync('./config/config.yml')) {
                     console.log('withdrawl');
                     var match = message.match(/^.?withdraw (\S+)$/);
                     if (match == null) {
-                        replytweet(from, replyid, 'Usage: !withdraw <' + settings.coin.full_name + ' address>');
+                        replytweet(sender, replyid, 'Usage: !withdraw <' + settings.coin.full_name + ' address>');
                         return;
                     }
                     var address = match[1];
                     coin.validateAddress(address, function (err, reply) {
                         if (err) {
                             winston.error('Error in !withdraw command', err);
-                            replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                            replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                             return;
                         }
                         if (reply.isvalid) {
-                            coin.getBalance(settings.rpc.prefix + from.toLowerCase(), settings.coin.min_confirmations, function (err, balance) {
+                            coin.getBalance(settings.rpc.prefix + sender.toLowerCase(), settings.coin.min_confirmations, function (err, balance) {
                                 if (err) {
                                     winston.error('Error in !withdraw command', err);
-                                    replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                                    replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                                     return;
                                 }
                                 var balance = typeof (balance) == 'object' ? balance.result : balance;
                                 if (balance < settings.coin.min_withdraw) {
-                                    winston.warn('%s tried to withdraw %d, but min is set to %d', from, balance, settings.coin.min_withdraw);
-                                    replytweet(from, replyid, settings.messages.withdraw_too_small.expand({name: from, balance: balance}));
+                                    winston.warn('%s tried to withdraw %d, but min is set to %d', sender, balance, settings.coin.min_withdraw);
+                                    replytweet(sender, replyid, settings.messages.withdraw_too_small.expand({name: sender, balance: balance}));
                                     return;
                                 }
-                                coin.sendFrom(settings.rpc.prefix + from.toLowerCase(), address, balance - settings.coin.withdrawal_fee, function (err, reply) {
+                                coin.sendFrom(settings.rpc.prefix + sender.toLowerCase(), address, balance - settings.coin.withdrawal_fee, function (err, reply) {
                                     if (err) {
                                         winston.error('Error in !withdraw command', err);
-                                        replytweet(from, replyid, settings.messages.error.expand({name: from}));
+                                        replytweet(sender, replyid, settings.messages.error.expand({name: sender}));
                                         return;
                                     }
-                                    var values = {name: from, address: address, balance: balance, amount: balance - settings.coin.withdrawal_fee, transaction: reply}
+                                    var values = {name: sender, address: address, balance: balance, amount: balance - settings.coin.withdrawal_fee, transaction: reply}
                                     for (var i = 0; i < settings.messages.withdraw_success.length; i++) {
                                         var msg = settings.messages.withdraw_success[i];
-                                        replytweet(from, replyid, msg.expand(values));
+                                        replytweet(sender, replyid, msg.expand(values));
                                     }
                                     ;
     // transfer the rest (withdrawal fee - txfee) to bots wallet
-                                    coin.getBalance(settings.rpc.prefix + from.toLowerCase(), function (err, balance) {
+                                    coin.getBalance(settings.rpc.prefix + sender.toLowerCase(), function (err, balance) {
                                         if (err) {
                                             winston.error('Something went wrong while transferring fees', err);
                                             return;
                                         }
                                         var balance = typeof (balance) == 'object' ? balance.result : balance;
     // moves the rest to bot's wallet
-                                        coin.move(settings.rpc.prefix + from.toLowerCase(), settings.rpc.prefix + settings.login.nickname.toLowerCase(), balance);
+                                        coin.move(settings.rpc.prefix + sender.toLowerCase(), settings.rpc.prefix + settings.login.nickname.toLowerCase(), balance);
                                     });
                                 });
                             });
                         } else {
-                            winston.warn('%s tried to withdraw to an invalid address', from);
-                            replytweet(from, replyid, settings.messages.invalid_address.expand({address: address, name: from}));
+                            winston.warn('%s tried to withdraw to an invalid address', sender);
+                            replytweet(sender, replyid, settings.messages.invalid_address.expand({address: address, name: sender}));
                         }
                     });
                     break;
@@ -270,4 +275,3 @@ if(!fs.existsSync('./config/config.yml')) {
             }
         });
     });
-
