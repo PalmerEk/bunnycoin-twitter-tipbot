@@ -16,7 +16,7 @@ if(!fs.existsSync('./config/config.yml')) {
     // write logs to file
     if (settings.log.file) {
         winston.add(winston.transports.File, {
-            filename: settings.log.file,
+            filename: settings.file,
             level: 'debug'});
     }
     // connect to coin json-rpc
@@ -55,7 +55,7 @@ if(!fs.existsSync('./config/config.yml')) {
     {
         var text = "";
         var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < 5;)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
     }
